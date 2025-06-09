@@ -31,6 +31,7 @@ jobs:
       - name: Install dependencies and compile assets
         run: |
           cd ${{ secrets.THEME_DIR }}
+          composer install --no-dev --no-progress --no-suggest
           npm install --silent --no-progress
           npm run build
 

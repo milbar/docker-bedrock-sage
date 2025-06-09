@@ -12,7 +12,8 @@ README.md
 .deploy-exclude
 .stylelintrc.js
 .travis.yml
-.docker-compose.yml
+pint.json
+docker-compose.yml
 auth.json
 auth.json.example
 composer.json
