@@ -14,26 +14,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set Node version 22.16.0
+      - name: Setup Node version
         uses: actions/setup-node@v3
         with:
           node-version: '22.16.0'
 
-      - name: Setup PHP with PECL extension
+      - name: Setup PHP version
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: mbstring, intl, opcache
-
-      - name: Run composer install
-        run: composer install --no-dev --no-progress --no-suggest
-
-      - name: Install dependencies and compile assets
-        run: |
-          cd ${{ secrets.THEME_DIR }}
-          composer install --no-dev --no-progress --no-suggest
-          npm install --silent --no-progress
-          npm run build
 
       - name: Setup Rclone
         uses: AnimMouse/setup-rclone@v1
@@ -49,4 +39,15 @@ jobs:
             explicit_tls = ${{ secrets.RCLONE_EXPLICIT_TLS }}
           disable_base64: true
 
-      - run: rclone sync --quiet --transfers 5 --checkers 10 --exclude-from=".deploy-exclude" --stats-one-line ./ remote:${{ secrets.SERVER_PATH }}
+      - name: Install project dependencies
+        run: composer install --no-dev --no-progress --no-suggest
+
+      - name: Install theme dependencies and compile assets
+        run: |
+          cd ${{ secrets.THEME_DIR }}
+          composer install --no-dev --no-progress --no-suggest
+          npm install --silent --no-progress
+          npm run build
+
+      - name: Deploy Via Rclone
+        run: rclone sync --quiet --transfers 4 --checkers 4 --exclude-from=".deploy-exclude" --stats-one-line ./ remote:${{ secrets.SERVER_PATH }}
