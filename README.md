@@ -163,6 +163,39 @@ The Sage theme is located at `web/app/themes/sage`. To work on the theme:
    - Update the URLs in the `.env` file to match your production domain
    - Ensure all security keys are unique for production
 
+## GitHub Workflow Deployment
+
+This project uses GitHub Actions for automated deployment to staging environments. The workflow is defined in `.github/workflows/staging.yml`.
+
+### Deployment Process
+
+When code is pushed to the `master` branch, the following automated process occurs:
+
+1. **Build Process**:
+   - The repository is checked out
+   - Node.js 22.16.0 and PHP 8.3 are set up
+   - Composer dependencies are installed (excluding dev dependencies)
+   - Theme dependencies are installed and assets are compiled with `npm run build`
+
+2. **Deployment with Rclone**:
+   - Rclone is configured using secure GitHub secrets
+   - Files are synchronized to the remote server using the command:
+     ```
+     rclone sync --transfers 5 --checkers 10 --exclude-from=".deploy-exclude" ./ remote:SERVER_PATH
+     ```
+   - The `.deploy-exclude` file specifies which files/directories should not be deployed
+
+3. **Exclusions**:
+   Files listed in `.deploy-exclude` are not transferred to the server, including:
+   - Development files (`.git`, `.github`, etc.)
+   - Docker configuration files
+   - Local environment files
+   - Node modules and other build artifacts
+
+### Manual Deployment
+
+You can also trigger the deployment manually through the GitHub Actions interface using the "workflow_dispatch" event.
+
 ## Technologies Used
 
 - **WordPress**: 6.8.1
