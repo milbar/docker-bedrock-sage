@@ -32,7 +32,7 @@ jobs:
         run: |
           cd ${{ secrets.THEME_DIR }}
           npm install --silent --no-progress
-          npm run build:production
+          npm run build
 
       - name: Setup Rclone
         uses: AnimMouse/setup-rclone@v1
