@@ -48,4 +48,4 @@ jobs:
             explicit_tls = ${{ secrets.RCLONE_EXPLICIT_TLS }}
           disable_base64: true
 
-      - run: 'rclone sync --quiet --transfers 5 --checkers 10 --exclude-from=".rsyncexclude" --stats-one-line ./ remote:${{ secrets.SERVER_PATH }}'
+      - run: rclone sync --quiet --transfers 5 --checkers 10 --exclude-from=".rsyncexclude" --stats-one-line ./ remote:${{ secrets.SERVER_PATH }}
