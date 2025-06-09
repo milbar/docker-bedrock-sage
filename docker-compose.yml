@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  appserver:
+    build:
+      context: .
+      dockerfile: ./docker/appserver.Dockerfile
+    container_name: yourproject_app
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./web:/var/www/html/web
+    depends_on:
+      - database
+    networks:
+      - app-network
+    command: >
+      sh -c "composer install &&
+      cd ${THEME_FOLDER} && composer install &&
+      wp-check-install.sh &&
+      php-fpm"
+
+  webserver:
+    image: nginx:alpine  # Use Alpine-based Nginx
+    container_name: yourproject_web
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - appserver
+    networks:
+      - app-network
+
+  database:
+    image: mariadb:lts  # Use Alpine-based MariaDB
+    container_name: yourproject_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  node:
+    build:
+      context: .
+      dockerfile: ./docker/node.Dockerfile
+    container_name: yourproject_node
+    working_dir: /var/www/html/${THEME_FOLDER}
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5173
+    volumes:
+      - .:/var/www/html
+    networks:
+      - app-network
+    ports:
+      - "5173:5173"
+    command: >
+      sh -c "npm install && npm run dev"
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: yourproject_mailhog
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - app-network
+    profiles:
+      - mail  # Use profile to make it optional
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: yourproject_pma
+    environment:
+      PMA_HOST: database
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8081:80"
+    depends_on:
+      - database
+    networks:
+      - app-network
+    profiles:
+      - myadmin  # Use profile to make it optional
+
+volumes:
+  db_data: { }
+
+networks:
+  app-network:
+    driver: bridge
