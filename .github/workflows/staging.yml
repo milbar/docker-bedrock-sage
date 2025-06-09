@@ -1,0 +1,51 @@
+name: Staging Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Node version 22.16.0
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.16.0'
+
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, opcache
+
+      - name: Run composer install
+        run: composer install --no-dev --no-progress --no-suggest
+
+      - name: Install dependencies and compile assets
+        run: |
+          cd ${{ secrets.THEME_DIR }}
+          npm install --silent --no-progress
+          npm run build:production
+
+      - name: Setup Rclone
+        uses: AnimMouse/setup-rclone@v1
+        with:
+          rclone_config: |
+            [remote]
+            type = ${{ secrets.RCLONE_TYPE }}
+            host = ${{ secrets.SERVER_HOST }}
+            port = ${{ secrets.SERVER_PORT }}
+            user = ${{ secrets.DEPLOY_USER }}
+            pass = ${{ secrets.DEPLOY_PASS }}
+            tls = ${{ secrets.RCLONE_TLS }}
+            explicit_tls = ${{ secrets.RCLONE_EXPLICIT_TLS }}
+          disable_base64: true
+
+      - run: 'rclone sync --quiet --transfers 5 --checkers 10 --exclude-from=".rsyncexclude" --stats-one-line ./ remote:${{ secrets.SERVER_PATH }}'
