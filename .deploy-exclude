@@ -4,7 +4,6 @@ README.md
 .env
 .env.example
 .eslintrc
-.git
 .gitattributes
 .gitignore
 .htaccess
@@ -19,6 +18,9 @@ auth.json.example
 composer.json
 composer.lock
 phpcs.xml
+error_log
+.git/**
+.github/**
 scripts/**
 docker/**
 web/app/uploads/**
