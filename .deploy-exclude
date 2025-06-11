@@ -16,8 +16,6 @@ pint.json
 docker-compose.yml
 auth.json
 auth.json.example
-composer.json
-composer.lock
 phpcs.xml
 error_log
 .git/**
