@@ -1,0 +1,96 @@
+name: Staging Build and Deploy
+
+on:
+  push:
+    branches:
+      - test
+  workflow_dispatch:
+
+concurrency:
+  group: staging-build-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Cache Composer deps
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, opcache
+
+      - name: Install PHP deps
+        run: composer install --no-dev --no-progress --prefer-dist
+
+      - name: Cache Node modules
+        uses: actions/cache@v3
+        with:
+          path: web/app/themes/sage/node_modules
+          key: ${{ runner.os }}-theme-node-${{ hashFiles('web/app/themes/sage/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-theme-node-
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+
+      - name: Install and build theme assets
+        run: |
+          cd web/app/themes/sage
+          npm ci
+          npm run build
+
+      - name: Package project as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: bedrock-package
+          path: |
+            web
+            vendor
+            wp-cli.yml
+
+  deploy:
+    name: Deploy to Staging
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+
+    steps:
+      - name: Download Bedrock package
+        uses: actions/download-artifact@v3
+        with:
+          name: bedrock-package
+          path: bedrock
+
+      - name: Setup Rclone
+        uses: AnimMouse/setup-rclone@v1
+        with:
+          rclone_config: |
+            [remote]
+            type = ${{ secrets.RCLONE_TYPE }}
+            host = ${{ secrets.SERVER_HOST }}
+            port = ${{ secrets.SERVER_PORT }}
+            user = ${{ secrets.DEPLOY_USER }}
+            pass = ${{ secrets.DEPLOY_PASS }}
+            tls = ${{ secrets.RCLONE_TLS }}
+            explicit_tls = ${{ secrets.RCLONE_EXPLICIT_TLS }}
+          disable_base64: true
+
+      - name: Deploy via Rclone
+        run: |
+          rclone sync --quiet --transfers 4 --checkers 4 --exclude-from=".deploy-exclude" ./bedrock remote:${{ secrets.SERVER_PATH }}
