@@ -47,6 +47,7 @@ jobs:
             web
             vendor
             wp-cli.yml
+            .deploy-exclude
 
   deploy:
     name: Deploy to Staging
