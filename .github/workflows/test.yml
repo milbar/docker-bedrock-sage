@@ -55,7 +55,7 @@ jobs:
           npm run build
 
       - name: Package project as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bedrock-package
           path: |
@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: Download Bedrock package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bedrock-package
           path: bedrock
